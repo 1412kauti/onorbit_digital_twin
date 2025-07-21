@@ -1,0 +1,310 @@
+<?xml version="1.0" ?>
+<robot name="CanadaArm2">
+
+<!-- <material name="silver">
+  <color rgba="0.700 0.700 0.700 1.000"/>
+</material> -->
+
+<link name="base_link">
+  <inertial>
+    <origin xyz="0.0009130959925412204 0.0006901136348603008 0.048208102763051236" rpy="0 0 0"/>
+    <mass value="0.4237059895243373"/>
+    <inertia ixx="0.0004092558945447719" iyy="0.00038404682501675465" izz="0.00020498064476976336" ixy="1.0165623829686665e-06" iyz="-4.948051807267175e-06" ixz="5.252636199371172e-06"/>
+  </inertial>
+  <visual>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://canadarm2_description/meshes/base_link.ply" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <!-- <material name="silver"/>
+    <material/> -->
+  </visual>
+  <collision>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://canadarm2_description/meshes/base_link.ply" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link_11">
+  <inertial>
+    <origin xyz="-0.012022080753456956 4.504438460746928e-06 0.021223287586985842" rpy="0 0 0"/>
+    <mass value="0.15579058238581803"/>
+    <inertia ixx="3.953363265274531e-05" iyy="8.371424973176991e-05" izz="8.6186782326062e-05" ixy="-1.0861613912698858e-07" iyz="4.379138446979421e-08" ixz="1.0201639682170562e-07"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.0 0.0 -0.109328" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://canadarm2_description/meshes/link_11.ply" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <!-- <material name="silver"/>
+    <material/> -->
+  </visual>
+  <collision>
+    <origin xyz="0.0 0.0 -0.109328" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://canadarm2_description/meshes/link_11.ply" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link_21">
+  <inertial>
+    <origin xyz="-0.0212722329621534 -9.563785822951881e-07 0.012022116937095928" rpy="0 0 0"/>
+    <mass value="0.15579021759009612"/>
+    <inertia ixx="8.648943169675899e-05" iyy="8.429241934648085e-05" izz="3.9871128569710134e-05" ixy="1.9888566181498303e-08" iyz="4.4424194576562314e-09" ixz="-1.110155253675714e-07"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.050762 0.0 -0.130583" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://canadarm2_description/meshes/link_21.ply" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <!-- <material name="silver"/>
+    <material/> -->
+  </visual>
+  <collision>
+    <origin xyz="0.050762 0.0 -0.130583" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://canadarm2_description/meshes/link_21.ply" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link_31">
+  <inertial>
+    <origin xyz="-0.3749592721242768 0.002167756136316175 0.020769052806213523" rpy="0 0 0"/>
+    <mass value="1.342026213015195"/>
+    <inertia ixx="0.0002589122773568181" iyy="0.06733252361597064" izz="0.06717431030885213" ixy="0.00018694044664734608" iyz="4.2211290964140266e-05" ixz="0.00020571069959553212"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.072005 0.0 -0.181344" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://canadarm2_description/meshes/link_31.ply" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <!-- <material name="silver"/>
+    <material/> -->
+  </visual>
+  <collision>
+    <origin xyz="0.072005 0.0 -0.181344" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://canadarm2_description/meshes/link_31.ply" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link_41">
+  <inertial>
+    <origin xyz="-0.34102429216742425 -0.0024875618163693954 0.022823592324091285" rpy="0 0 0"/>
+    <mass value="1.3047791025053486"/>
+    <inertia ixx="0.0005005819746586454" iyy="0.06098802088277111" izz="0.06111706243026238" ixy="0.0003290206609817877" iyz="-1.2463562465362039e-05" ixz="-7.483793257567761e-05"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.775703 -1.6e-05 -0.232005" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://canadarm2_description/meshes/link_41.ply" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <!-- <material name="silver"/>
+    <material/> -->
+  </visual>
+  <collision>
+    <origin xyz="0.775703 -1.6e-05 -0.232005" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://canadarm2_description/meshes/link_41.ply" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link_51">
+  <inertial>
+    <origin xyz="2.9454009316642882e-05 -5.2291701487376e-06 0.0387351142341712" rpy="0 0 0"/>
+    <mass value="0.15576553227829482"/>
+    <inertia ixx="8.227001568061366e-05" iyy="7.603788598981032e-05" izz="3.561108290406345e-05" ixy="2.1739266745471905e-07" iyz="5.310540229706253e-07" ixz="-7.962361346647295e-08"/>
+  </inertial>
+  <visual>
+    <origin xyz="1.479425 -1.6e-05 -0.274942" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://canadarm2_description/meshes/link_51.ply" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <!-- <material name="silver"/>
+    <material/> -->
+  </visual>
+  <collision>
+    <origin xyz="1.479425 -1.6e-05 -0.274942" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://canadarm2_description/meshes/link_51.ply" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link_61">
+  <inertial>
+    <origin xyz="-0.03871469375007819 4.616231212433191e-05 2.3531261986620144e-05" rpy="0 0 0"/>
+    <mass value="0.15575461112408165"/>
+    <inertia ixx="6.80786724601562e-05" iyy="0.00013769812830949357" izz="0.00011250739279045074" ixy="-4.997630556600001e-06" iyz="-4.777732048404048e-06" ixz="-1.2882027089627934e-06"/>
+  </inertial>
+  <visual>
+    <origin xyz="1.500669 -1.6e-05 -0.325704" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://canadarm2_description/meshes/link_61.ply" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <!-- <material name="silver"/>
+    <material/> -->
+  </visual>
+  <collision>
+    <origin xyz="1.500669 -1.6e-05 -0.325704" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://canadarm2_description/meshes/link_61.ply" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link_71">
+  <inertial>
+    <origin xyz="-0.0009163908926697051 -0.06112025146618943 0.000688272549077884" rpy="0 0 0"/>
+    <mass value="0.4237362876419118"/>
+    <inertia ixx="0.0004086266635229194" iyy="0.00020387938058230581" izz="0.0003835310833186778" ixy="-5.194200628555468e-06" iyz="-4.93113862320288e-06" ixz="-1.0191638754875054e-06"/>
+  </inertial>
+  <visual>
+    <origin xyz="1.55143 0.021239 -0.325704" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://canadarm2_description/meshes/link_71.ply" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <!-- <material name="silver"/>
+    <material/> -->
+  </visual>
+  <collision>
+    <origin xyz="1.55143 0.021239 -0.325704" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://canadarm2_description/meshes/link_71.ply" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<joint name="joint_1" type="revolute">
+  <origin xyz="0.0 0.0 0.109328" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="link_11"/>
+  <axis xyz="-0.0 0.0 -1.0"/>
+  <limit upper="6.283185" lower="0.0" effort="100" velocity="100"/>
+</joint>
+<transmission name="joint_1_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="joint_1">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="joint_1_actr">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+<joint name="joint_2" type="revolute">
+  <origin xyz="-0.050762 0.0 0.021255" rpy="0 0 0"/>
+  <parent link="link_11"/>
+  <child link="link_21"/>
+  <axis xyz="-1.0 0.0 0.0"/>
+  <limit upper="6.283185" lower="0.0" effort="100" velocity="100"/>
+</joint>
+<transmission name="joint_2_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="joint_2">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="joint_2_actr">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+<joint name="joint_3" type="revolute">
+  <origin xyz="-0.021243 0.0 0.050761" rpy="0 0 0"/>
+  <parent link="link_21"/>
+  <child link="link_31"/>
+  <axis xyz="0.0 0.0 1.0"/>
+  <limit upper="6.283185" lower="0.0" effort="100" velocity="100"/>
+</joint>
+<transmission name="joint_3_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="joint_3">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="joint_3_actr">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+<joint name="joint_4" type="revolute">
+  <origin xyz="-0.703698 1.6e-05 0.050661" rpy="0 0 0"/>
+  <parent link="link_31"/>
+  <child link="link_41"/>
+  <axis xyz="0.0 0.0 1.0"/>
+  <limit upper="6.283185" lower="0.0" effort="100" velocity="100"/>
+</joint>
+<transmission name="joint_4_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="joint_4">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="joint_4_actr">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+<joint name="joint_5" type="revolute">
+  <origin xyz="-0.703722 0.0 0.042937" rpy="0 0 0"/>
+  <parent link="link_41"/>
+  <child link="link_51"/>
+  <axis xyz="-0.0 0.0 1.0"/>
+  <limit upper="6.283185" lower="0.0" effort="100" velocity="100"/>
+</joint>
+<transmission name="joint_5_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="joint_5">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="joint_5_actr">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+<joint name="joint_6" type="revolute">
+  <origin xyz="-0.021244 0.0 0.050762" rpy="0 0 0"/>
+  <parent link="link_51"/>
+  <child link="link_61"/>
+  <axis xyz="-1.0 -0.0 0.0"/>
+  <limit upper="6.283185" lower="0.0" effort="100" velocity="100"/>
+</joint>
+<transmission name="joint_6_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="joint_6">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="joint_6_actr">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+<joint name="joint_7" type="revolute">
+  <origin xyz="-0.050761 -0.021255 0.0" rpy="0 0 0"/>
+  <parent link="link_61"/>
+  <child link="link_71"/>
+  <axis xyz="0.0 -1.0 0.0"/>
+  <limit upper="6.283185" lower="0.0" effort="100" velocity="100"/>
+</joint>
+<transmission name="joint_7_tran">
+  <type>transmission_interface/SimpleTransmission</type>
+  <joint name="joint_7">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+  </joint>
+  <actuator name="joint_7_actr">
+    <hardwareInterface>PositionJointInterface</hardwareInterface>
+    <mechanicalReduction>1</mechanicalReduction>
+  </actuator>
+</transmission>
+
+</robot>

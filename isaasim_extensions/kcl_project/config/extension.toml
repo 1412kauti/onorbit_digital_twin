@@ -1,0 +1,13 @@
+[package]
+version = "1.0.0"
+title = "KCL Individual Project"
+description = "A test extension for Kauti to verify Isaac Sim extension setup"
+authors = ["Kauti"]
+category = "Example"
+keywords = ["test", "kauti", "example", "tutorial"]
+
+[dependencies]
+"omni.kit.uiapp" = {}
+
+[[python.module]]
+name = "kcl_project"
