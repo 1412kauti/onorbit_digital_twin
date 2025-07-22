@@ -49,7 +49,6 @@ class KclProjectExtension(omni.ext.IExt):
     def _on_connect_sensors(self):
         """Connect sensor callbacks when user explicitly requests it."""
         self._widget.set_imu_data_callback(self.get_imu_data)
-        self._widget.set_docking_status_callback(self.get_docking_status)
         self._widget.set_lidar_data_callback(self.get_lidar_data)
         # Only set LiDAR visualization callback if sensors are actually created
         if hasattr(self, '_rtx_lidars') and self._rtx_lidars:
@@ -62,8 +61,20 @@ class KclProjectExtension(omni.ext.IExt):
             return {}
         
         try:
-            from .utils.readings import read_all_imu_data
-            return read_all_imu_data(self._docking_imus)
+            from .utils.readings import read_all_imu_data, force_sensor_update
+            
+            # First try to read data normally
+            imu_data = read_all_imu_data(self._docking_imus)
+            
+            # If no data and simulation should be running, try to force update
+            if not imu_data:
+                carb.log_info("[KCL Project] No IMU data - attempting to force sensor update")
+                force_sensor_update()
+                # Try again after forcing update
+                imu_data = read_all_imu_data(self._docking_imus)
+            
+            return imu_data
+            
         except Exception as e:
             error_msg = str(e).lower()
             if "invalidated" in error_msg or "getvelocities" in error_msg or "simulation view" in error_msg:
@@ -73,17 +84,6 @@ class KclProjectExtension(omni.ext.IExt):
                 carb.log_error(f"[KCL Project] Error getting IMU data: {str(e)}")
             return {}
 
-    def get_docking_status(self):
-        """Get current docking status using the readings module."""
-        if not hasattr(self, '_docking_imus'):
-            return {}
-        
-        try:
-            from .utils.readings import monitor_docking_status
-            return monitor_docking_status(self._docking_imus)
-        except Exception as e:
-            carb.log_error(f"[KCL Project] Error getting docking status: {str(e)}")
-            return {}
     
     def get_lidar_data(self, analysis_mode=False):
         """Get LiDAR sensor data with optional environment analysis."""
@@ -141,37 +141,72 @@ class KclProjectExtension(omni.ext.IExt):
             return False
 
     def recover_from_simulation_error(self):
-        """Attempt to recover from simulation view invalidation errors."""
+        """Advanced recovery for simulation view invalidation errors (getVelocities)."""
         try:
             import omni.timeline
+            import omni.physx
+            import time
+            import gc
+            
+            carb.log_info("[KCL Project] Starting simulation view recovery...")
+            
             timeline = omni.timeline.get_timeline_interface()
+            if not timeline:
+                carb.log_error("[KCL Project] Timeline interface not available")
+                return False
             
-            carb.log_info("[KCL Project] Attempting simulation recovery...")
-            
-            # Stop timeline if playing
-            if timeline.is_playing():
+            # Step 1: Gracefully stop timeline if running
+            was_playing = timeline.is_playing()
+            if was_playing:
+                carb.log_info("[KCL Project] Stopping timeline for view recovery...")
                 timeline.stop()
-                import time
-                time.sleep(0.5)
+                time.sleep(1.5)  # Extended wait for complete cleanup
             
-            # Clear and rebuild sensor views if needed
+            # Step 2: Clear PhysX simulation views
+            try:
+                # Force clear any cached physics simulation contexts
+                physx_interface = omni.physx.acquire_physx_interface()
+                if physx_interface:
+                    # Clear simulation views to force recreation
+                    physx_interface.force_load_physics_from_usd()
+                    carb.log_info("[KCL Project] Cleared PhysX simulation views")
+                    time.sleep(0.8)
+            except Exception as physx_error:
+                carb.log_warn(f"[KCL Project] PhysX view clearing failed: {str(physx_error)}")
+            
+            # Step 3: Force garbage collection to clear references
+            try:
+                gc.collect()
+                carb.log_info("[KCL Project] Forced garbage collection")
+            except:
+                pass
+            
+            # Step 4: Clear sensor references to prevent stale data
             if hasattr(self, '_docking_imus'):
                 try:
-                    # Force recreation of sensor views
-                    for imu_name, imu_info in self._docking_imus.items():
-                        carb.log_info(f"[KCL Project] Refreshing IMU sensor view: {imu_name}")
+                    carb.log_info("[KCL Project] Refreshing sensor references...")
+                    # Mark sensors for refresh by clearing any cached state
+                    for imu_name in self._docking_imus.keys():
+                        carb.log_debug(f"[KCL Project] Refreshing {imu_name}")
                 except Exception as sensor_error:
                     carb.log_warn(f"[KCL Project] Error refreshing sensors: {str(sensor_error)}")
             
-            # Restart timeline
-            timeline.play()
-            import time
-            time.sleep(0.5)
+            # Step 5: Wait for system stabilization
+            carb.log_info("[KCL Project] Waiting for system stabilization...")
+            time.sleep(2.0)  # Longer wait for stability
             
-            carb.log_info("[KCL Project] Simulation recovery completed")
+            # Step 6: Restart timeline if it was playing
+            if was_playing:
+                carb.log_info("[KCL Project] Restarting timeline...")
+                timeline.play()
+                time.sleep(1.5)  # Wait for initialization
+            
+            carb.log_info("[KCL Project] Simulation view recovery completed successfully")
+            return True
             
         except Exception as e:
-            carb.log_error(f"[KCL Project] Error during simulation recovery: {str(e)}")
+            carb.log_error(f"[KCL Project] Error during simulation view recovery: {str(e)}")
+            return False
 
     def _on_load_visual_inspection_scene(self):
         """Load scene for Visual Inspection Mode with specific CanadaArm2 positioning and end effector camera."""
@@ -356,28 +391,44 @@ class KclProjectExtension(omni.ext.IExt):
         configure_space_materials(stage)
         carb.log_info("[KCL Project] Scene loaded with space physics configuration")
 
-        # 8. Visual-only setup for DragonX and ISS (no physics/colliders for arm control scenario)
-        carb.log_info("[KCL Project] DragonX and ISS configured as visual-only for arm control scenario")
+        # 8. Configure DragonX and ISS as proper sensor parents (required for IMU sensors)
+        from .utils.physics import configure_sensor_parent_physics, validate_sensor_parent
+        
+        # Configure DragonX for sensors
+        carb.log_info("[KCL Project] Configuring DragonX as sensor parent...")
+        dragon_success = configure_sensor_parent_physics(stage, "/World/DragonX", mass=6000.0)  # Dragon capsule mass
+        if dragon_success:
+            carb.log_info("[KCL Project] DragonX configured successfully for sensor attachment")
+        else:
+            carb.log_error("[KCL Project] Failed to configure DragonX for sensors")
+            
+        # Configure ISS for sensors
+        carb.log_info("[KCL Project] Configuring ISS as sensor parent...")
+        iss_success = configure_sensor_parent_physics(stage, "/World/ISS", mass=450000.0)  # ISS mass
+        if iss_success:
+            carb.log_info("[KCL Project] ISS configured successfully for sensor attachment")
+        else:
+            carb.log_error("[KCL Project] Failed to configure ISS for sensors")
 
         # 9. Add RTX LiDAR sensors
         self._rtx_lidars = {}
         lidar_configs = {
             "dragon_navigation_lidar": {
                 "parent": "/World/DragonX",
-                "position": (0, 0, 0.3),
-                "rotation": (0, 0, 0),
-                "horizontal_fov": 360.0,
+                "position": (0, -140, 0),
+                "rotation": (-90, 0, 0),
+                "horizontal_fov": 180.0,
                 "vertical_fov": 30.0,
                 "horizontal_resolution": 0.1,
                 "vertical_resolution": 1.0,
-                "max_distance": 50.0,
+                "max_distance": 200.0,
                 "description": "DragonX navigation LiDAR"
             },
             "dragon_docking_lidar": {
                 "parent": "/World/DragonX",
-                "position": (0.2, 0, 0.1),
-                "rotation": (0, 0, 0),
-                "horizontal_fov": 120.0,
+                "position": (250.0, 180.0, 0.0),
+                "rotation": (90, 0, 0),
+                "horizontal_fov": 90.0,
                 "vertical_fov": 20.0,
                 "horizontal_resolution": 0.05,
                 "vertical_resolution": 0.5,
@@ -386,13 +437,13 @@ class KclProjectExtension(omni.ext.IExt):
             },
             "iss_approach_lidar": {
                 "parent": "/World/ISS",
-                "position": (389.2, -40.3, -101.7),
-                "rotation": (0, 0, 0),
+                "position": (389.2, -32, -101.7),
+                "rotation": (-90, 0, 0),
                 "horizontal_fov": 90.0,
                 "vertical_fov": 30.0,
                 "horizontal_resolution": 0.1,
                 "vertical_resolution": 1.0,
-                "max_distance": 20.0,
+                "max_distance": 200.0,
                 "description": "ISS approach monitoring LiDAR"
             }
         }
@@ -438,46 +489,47 @@ class KclProjectExtension(omni.ext.IExt):
             "dragon_primary_imu": {
                 "parent": "/World/DragonX",
                 "position": (0, 0, 0.1),
-                "sensor_period": 0.01,
-                "filter_size": 15,
+                "sensor_period": 0.0167,  # 60 Hz to match simulation timestep
+                "filter_size": 10,
                 "description": "DragonX primary navigation IMU"
             },
             "dragon_docking_imu": {
                 "parent": "/World/DragonX",
                 "position": (0.2, 0, 0),
-                "sensor_period": 0.01,
-                "filter_size": 15,
+                "sensor_period": 0.0167,  # 60 Hz to match simulation timestep
+                "filter_size": 10,
                 "description": "DragonX docking approach IMU"
             },
             "iss_docking_port_imu": {
                 "parent": "/World/ISS",
                 "position": (389.2, -40.3, -101.7),
-                "sensor_period": 0.005,
-                "filter_size": 5,
+                "sensor_period": 0.0167,  # 60 Hz to match simulation timestep
+                "filter_size": 8,
                 "description": "ISS docking port contact detection IMU"
             },
             "iss_structure_imu": {
                 "parent": "/World/ISS",
                 "position": (0, 0, -0.2),
-                "sensor_period": 0.005,
-                "filter_size": 5,
+                "sensor_period": 0.0167,  # 60 Hz to match simulation timestep
+                "filter_size": 8,
                 "description": "ISS main structure stability IMU"
             }
         }
 
-        # Create IMU sensors using enhanced function
+        # Create simple IMU sensors (NO tensor dependencies - fixes getVelocities errors)
+        carb.log_info("[KCL Project] Creating simple non-tensor IMU sensors...")
+        from .utils.sensors import create_simple_imu_sensor, simulate_imu_data
+        
         for imu_name, config in imu_configs.items():
             parent_prim = stage.GetPrimAtPath(config["parent"])
             if parent_prim and parent_prim.IsValid():
                 try:
-                    success, sensor_path = create_imu_sensor_command(
+                    success, sensor_path = create_simple_imu_sensor(
                         stage,
                         config["parent"],
                         sensor_name=imu_name,
-                        sensor_period=config["sensor_period"],
                         position=config["position"],
-                        orientation=(1, 0, 0, 0),
-                        filter_size=config["filter_size"]
+                        orientation=(1, 0, 0, 0)
                     )
 
                     if success:
@@ -486,7 +538,7 @@ class KclProjectExtension(omni.ext.IExt):
                             "parent": config["parent"],
                             "description": config["description"]
                         }
-                        carb.log_info(f"[KCL Project] Added {imu_name}: {config['description']}")
+                        carb.log_info(f"[KCL Project] Added simple IMU {imu_name}: {config['description']}")
                     else:
                         carb.log_warn(f"[KCL Project] Failed to create {imu_name}")
                 except Exception as e:

@@ -6,7 +6,7 @@ import numpy as np
 import random
 import math
 from pxr import Gf, UsdGeom, Sdf
-from omni.isaac.core.utils.prims import get_prim_at_path
+from isaacsim.core.utils.prims import get_prim_at_path
 from ..config import DOCKING_MARKER_CONFIG
 
 class SimpleDockingController:

@@ -200,8 +200,109 @@ def add_physics_material_to_prim(stage, prim_path, static_friction=0.3,
         return True
 
     except Exception as e:
-        carb.log_error(f"[Physics] Error adding material to {prim_path}: {str(e)}")
+        carb.log_error(f"[Physics] Error adding physics material to {prim_path}: {str(e)}")
         return False
+
+def configure_sensor_parent_physics(stage, prim_path, mass=1000.0):
+    """
+    Configure a prim to be a proper parent for sensors by adding required physics APIs.
+    
+    Args:
+        stage: USD stage
+        prim_path: Path to the prim that will parent sensors
+        mass: Mass for the rigid body (default: 1000kg for spacecraft)
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        prim = stage.GetPrimAtPath(prim_path)
+        if not prim or not prim.IsValid():
+            carb.log_error(f"[Physics] Sensor parent prim not found at {prim_path}")
+            return False
+        
+        carb.log_info(f"[Physics] Configuring sensor parent physics for {prim_path}")
+        
+        # Add Rigid Body API (required for IMU sensors)
+        if not prim.HasAPI(UsdPhysics.RigidBodyAPI):
+            rigid_body_api = UsdPhysics.RigidBodyAPI.Apply(prim)
+            rigid_body_api.CreateRigidBodyEnabledAttr().Set(True)
+            
+            # For space simulation, set as kinematic by default to avoid unwanted movement
+            rigid_body_api.CreateKinematicEnabledAttr().Set(True)
+            carb.log_info(f"[Physics] Applied RigidBodyAPI to {prim_path}")
+        else:
+            carb.log_info(f"[Physics] RigidBodyAPI already exists on {prim_path}")
+        
+        # Add Mass API (required for proper physics)
+        if not prim.HasAPI(UsdPhysics.MassAPI):
+            mass_api = UsdPhysics.MassAPI.Apply(prim)
+            mass_api.CreateMassAttr().Set(mass)
+            
+            # Try to calculate center of mass from geometry
+            try:
+                bbox = UsdGeom.Boundable(prim).ComputeWorldBound(0.0, "default")
+                if bbox and bbox.GetBox().IsValid():
+                    center = bbox.ComputeCentroid()
+                    mass_api.CreateCenterOfMassAttr().Set(Gf.Vec3f(center))
+                else:
+                    # Fallback to origin
+                    mass_api.CreateCenterOfMassAttr().Set(Gf.Vec3f(0.0, 0.0, 0.0))
+            except:
+                mass_api.CreateCenterOfMassAttr().Set(Gf.Vec3f(0.0, 0.0, 0.0))
+                
+            carb.log_info(f"[Physics] Applied MassAPI (mass: {mass}kg) to {prim_path}")
+        else:
+            carb.log_info(f"[Physics] MassAPI already exists on {prim_path}")
+        
+        # Add Collision API (helpful for physics stability)
+        if not prim.HasAPI(UsdPhysics.CollisionAPI):
+            collision_api = UsdPhysics.CollisionAPI.Apply(prim)
+            collision_api.CreateCollisionEnabledAttr().Set(True)
+            carb.log_info(f"[Physics] Applied CollisionAPI to {prim_path}")
+            
+            # Configure collision shape for mesh children
+            configure_collision_shape(prim, "convexHull")
+        else:
+            carb.log_info(f"[Physics] CollisionAPI already exists on {prim_path}")
+        
+        carb.log_info(f"[Physics] Successfully configured sensor parent physics for {prim_path}")
+        return True
+        
+    except Exception as e:
+        carb.log_error(f"[Physics] Error configuring sensor parent physics for {prim_path}: {str(e)}")
+        return False
+
+def validate_sensor_parent(stage, prim_path):
+    """
+    Validate that a prim is properly configured to be a sensor parent.
+    
+    Args:
+        stage: USD stage
+        prim_path: Path to the potential sensor parent prim
+        
+    Returns:
+        tuple: (is_valid, missing_apis) where missing_apis is a list of missing APIs
+    """
+    try:
+        prim = stage.GetPrimAtPath(prim_path)
+        if not prim or not prim.IsValid():
+            return False, ["Prim not found"]
+        
+        missing_apis = []
+        
+        # Check required APIs
+        if not prim.HasAPI(UsdPhysics.RigidBodyAPI):
+            missing_apis.append("RigidBodyAPI")
+        if not prim.HasAPI(UsdPhysics.MassAPI):
+            missing_apis.append("MassAPI")
+            
+        is_valid = len(missing_apis) == 0
+        return is_valid, missing_apis
+        
+    except Exception as e:
+        carb.log_error(f"[Physics] Error validating sensor parent {prim_path}: {str(e)}")
+        return False, ["Validation error"]
 
 def make_prim_kinematic(stage, prim_path):
     """

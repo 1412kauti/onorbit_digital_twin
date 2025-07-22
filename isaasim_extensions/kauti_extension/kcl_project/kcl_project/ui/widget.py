@@ -41,7 +41,6 @@ class KclMainWidget:
         self._imu_labels = {}
         self._update_stream = None
         self._get_imu_data_callback = None
-        self._get_docking_status_callback = None
         self._connect_sensors_callback = None
         self._sensors_connected = False
         
@@ -60,9 +59,6 @@ class KclMainWidget:
         """Set the callback function to get IMU data."""
         self._get_imu_data_callback = callback
 
-    def set_docking_status_callback(self, callback):
-        """Set the callback function to get docking status."""
-        self._get_docking_status_callback = callback
 
     def set_connect_sensors_callback(self, callback):
         """Set the callback function to connect sensors."""
@@ -118,16 +114,6 @@ class KclMainWidget:
             self._create_lidar_display()
         elif self._lidar_window:
             self._destroy_lidar_display()
-    
-    def _on_show_docking_status(self):
-        """Show docking status in console."""
-        if not self._sensors_connected:
-            carb.log_warn("[Widget] Please connect sensors first")
-            return
-            
-        if self._get_docking_status_callback:
-            status = self._get_docking_status_callback()
-            carb.log_info(f"[Docking Status] {status}")
     
     def _on_randomize_dragon(self):
         """Handle randomize DragonX button click."""
@@ -210,6 +196,36 @@ class KclMainWidget:
             carb.log_info(f"[Simple Docking Widget] Final speed changed to {speed:.3f}")
         except Exception as e:
             carb.log_error(f"[Simple Docking Widget] Error changing final speed: {str(e)}")
+    
+    def _on_advanced_approach_speed_changed(self, model):
+        """Handle approach speed slider changes in Advanced Docking mode."""
+        try:
+            speed = model.get_value_as_float()
+            if hasattr(self, '_advanced_approach_speed_label') and self._advanced_approach_speed_label:
+                self._advanced_approach_speed_label.text = f"{speed:.3f}"
+            
+            # TODO: Add callback to extension for updating docking controller
+            # if hasattr(self, '_advanced_speed_callback') and self._advanced_speed_callback:
+            #     self._advanced_speed_callback('set_approach_speed', speed)
+                
+            carb.log_info(f"[Advanced Docking Widget] Approach speed changed to {speed:.3f}")
+        except Exception as e:
+            carb.log_error(f"[Advanced Docking Widget] Error changing approach speed: {str(e)}")
+    
+    def _on_advanced_final_speed_changed(self, model):
+        """Handle final speed slider changes in Advanced Docking mode."""
+        try:
+            speed = model.get_value_as_float()
+            if hasattr(self, '_advanced_final_speed_label') and self._advanced_final_speed_label:
+                self._advanced_final_speed_label.text = f"{speed:.3f}"
+            
+            # TODO: Add callback to extension for updating docking controller
+            # if hasattr(self, '_advanced_speed_callback') and self._advanced_speed_callback:
+            #     self._advanced_speed_callback('set_final_speed', speed)
+                
+            carb.log_info(f"[Advanced Docking Widget] Final speed changed to {speed:.3f}")
+        except Exception as e:
+            carb.log_error(f"[Advanced Docking Widget] Error changing final speed: {str(e)}")
     
     def _on_operation_changed(self, model, item):
         """Handle docking operation dropdown change."""
@@ -313,23 +329,71 @@ class KclMainWidget:
         
         ui.Spacer(height=10)
         
+        # Scene control buttons
+        ui.Label("Scene Controls", style={"font_size": 12, "color": 0xFF0080FF})
+        ui.Button("Load Scene", height=40, width=180).set_clicked_fn(self._on_load_scene)
+        ui.Button("Clear Scene", height=40, width=180).set_clicked_fn(self._on_clear_scene)
+        
+        ui.Spacer(height=10)
+        
         # Connect sensors first for advanced mode
+        ui.Label("Sensor Setup", style={"font_size": 12, "color": 0xFF0080FF})
         ui.Button("Connect Sensors", height=35, width=180).set_clicked_fn(self._on_connect_sensors)
         
         ui.Spacer(height=5)
         
+        # Sensor data display buttons
+        with ui.HStack(spacing=10):
+            ui.Button("Show IMU Data", height=35, width=85).set_clicked_fn(self._on_show_imu_data)
+            ui.Button("Show LiDAR Data", height=35, width=85).set_clicked_fn(self._on_show_lidar_data)
+        
+        ui.Spacer(height=10)
+        
+        # Speed Control Section
+        ui.Label("Speed Controls", style={"font_size": 12, "color": 0xFF0080FF})
+        
+        with ui.VStack(spacing=5):
+            # Approach Speed Slider
+            with ui.HStack(spacing=5):
+                ui.Label("Approach Speed:", width=100, style={"font_size": 11})
+                self._advanced_approach_speed_slider = ui.FloatSlider(
+                    min=0.05, max=2.0, step=0.01,
+                    model=ui.SimpleFloatModel(0.15),
+                    width=140, height=18
+                )
+                self._advanced_approach_speed_label = ui.Label("0.15", width=40, style={"font_size": 11, "color": 0xFF00FF00})
+            
+            # Final Speed Slider
+            with ui.HStack(spacing=5):
+                ui.Label("Final Speed:", width=100, style={"font_size": 11})
+                self._advanced_final_speed_slider = ui.FloatSlider(
+                    min=0.02, max=1.0, step=0.01,
+                    model=ui.SimpleFloatModel(0.12),
+                    width=140, height=18
+                )
+                self._advanced_final_speed_label = ui.Label("0.12", width=40, style={"font_size": 11, "color": 0xFF00FF00})
+            
+            # Speed control callbacks
+            self._advanced_approach_speed_slider.model.add_value_changed_fn(self._on_advanced_approach_speed_changed)
+            self._advanced_final_speed_slider.model.add_value_changed_fn(self._on_advanced_final_speed_changed)
+        
+        ui.Spacer(height=10)
+        
         # Docking control buttons
+        ui.Label("Docking Controls", style={"font_size": 12, "color": 0xFF0080FF})
         with ui.HStack(spacing=10):
             ui.Button("Randomize Position", height=35, width=85).set_clicked_fn(self._on_randomize_dragon)
             ui.Button("Start Advanced Docking", height=35, width=85).set_clicked_fn(lambda: self._on_start_docking("Advanced"))
         
         ui.Button("Stop Docking", height=35, width=180).set_clicked_fn(self._on_stop_docking)
+        ui.Button("Reset DragonX", height=35, width=180).set_clicked_fn(self._on_reset_dragon)
         
         ui.Spacer(height=10)
         
         # Advanced mode info
         ui.Label("Advanced Monitoring", style={"font_size": 12, "color": 0xFF0080FF})
         ui.Label("Real-time metrics window opens automatically", style={"font_size": 10, "color": 0xFFFFFFFF})
+        ui.Label("Sensor data windows available above", style={"font_size": 10, "color": 0xFFFFFFFF})
     
     def _create_visual_inspection_interface(self):
         """Create interface for Visual Inspection operation."""
@@ -357,8 +421,6 @@ class KclMainWidget:
             ui.Button("Show IMU Data", height=35, width=85).set_clicked_fn(self._on_show_imu_data)
             ui.Button("Show LiDAR Data", height=35, width=85).set_clicked_fn(self._on_show_lidar_data)
         
-        ui.Button("Show Docking Status", height=35, width=180).set_clicked_fn(self._on_show_docking_status)
-        
         ui.Spacer(height=10)
         
         # Position controls for inspection
@@ -374,78 +436,6 @@ class KclMainWidget:
         ui.Label("• Real-time sensor data visualization", style={"font_size": 10, "color": 0xFFFFFFFF})
         ui.Label("• Camera view switching", style={"font_size": 10, "color": 0xFFFFFFFF})
         ui.Label("• Position analysis and control", style={"font_size": 10, "color": 0xFFFFFFFF})
-    
-    def _create_sensor_monitoring_interface(self):
-        """Create interface for Sensor monitoring operation."""
-        ui.Label("Sensor Monitoring", style={"font_size": 14, "color": 0xFF00FF00})
-        ui.Label("View real-time sensor data", style={"font_size": 12, "color": 0xFFFFFFFF})
-        
-        ui.Spacer(height=10)
-        
-        # Connect sensors first
-        ui.Button("Connect Sensors", height=35, width=180).set_clicked_fn(self._on_connect_sensors)
-        
-        ui.Spacer(height=5)
-        
-        # Sensor monitoring buttons
-        with ui.HStack(spacing=10):
-            ui.Button("Show IMU Data", height=35, width=85).set_clicked_fn(self._on_show_imu_data)
-            ui.Button("Show LiDAR Data", height=35, width=85).set_clicked_fn(self._on_show_lidar_data)
-        
-        ui.Button("Show Docking Status", height=35, width=180).set_clicked_fn(self._on_show_docking_status)
-        
-        ui.Spacer(height=10)
-        
-        ui.Label("Sensor Status", style={"font_size": 12, "color": 0xFF0080FF})
-        ui.Label("Connect sensors to view real-time data", style={"font_size": 10, "color": 0xFFFFFFFF})
-    
-    def _create_position_control_interface(self):
-        """Create interface for Position control operation."""
-        ui.Label("Position Control", style={"font_size": 14, "color": 0xFF00FF00})
-        ui.Label("Manual position adjustments", style={"font_size": 12, "color": 0xFFFFFFFF})
-        
-        ui.Spacer(height=10)
-        
-        # Position control buttons
-        ui.Button("Randomize DragonX Position", height=35, width=180).set_clicked_fn(self._on_randomize_dragon)
-        ui.Button("Reset to Load Scene Position", height=35, width=180).set_clicked_fn(self._on_reset_dragon)
-        
-        ui.Spacer(height=10)
-        
-        ui.Label("Position Operations", style={"font_size": 12, "color": 0xFF0080FF})
-        ui.Label("Manual control of DragonX positioning", style={"font_size": 10, "color": 0xFFFFFFFF})
-    
-    def _create_system_diagnostics_interface(self):
-        """Create interface for System diagnostics operation."""
-        ui.Label("System Diagnostics", style={"font_size": 14, "color": 0xFF00FF00})
-        ui.Label("Status and health checks", style={"font_size": 12, "color": 0xFFFFFFFF})
-        
-        ui.Spacer(height=10)
-        
-        # Diagnostics buttons
-        ui.Button("Connect Sensors", height=35, width=180).set_clicked_fn(self._on_connect_sensors)
-        
-        ui.Spacer(height=5)
-        
-        with ui.HStack(spacing=10):
-            ui.Button("Check Docking Status", height=35, width=85).set_clicked_fn(self._on_show_docking_status)
-            ui.Button("View Sensor Data", height=35, width=85).set_clicked_fn(self._on_show_imu_data)
-        
-        ui.Button("System Health Check", height=35, width=180).set_clicked_fn(self._on_system_health_check)
-        
-        ui.Spacer(height=10)
-        
-        ui.Label("System Status", style={"font_size": 12, "color": 0xFF0080FF})
-        ui.Label("Run diagnostics to check system health", style={"font_size": 10, "color": 0xFFFFFFFF})
-    
-    def _on_system_health_check(self):
-        """Perform system health check."""
-        carb.log_info("[Widget] System Health Check:")
-        carb.log_info(f"[Widget] - Sensors Connected: {self._sensors_connected}")
-        carb.log_info(f"[Widget] - IMU Callback: {'Available' if self._get_imu_data_callback else 'Not Available'}")
-        carb.log_info(f"[Widget] - LiDAR Callback: {'Available' if self._get_lidar_data_callback else 'Not Available'}")
-        carb.log_info(f"[Widget] - Docking Callbacks: {'Available' if self._start_docking_callback else 'Not Available'}")
-        carb.log_info("[Widget] System health check completed - see console for details")
     
     def _create_simple_mode_buttons(self):
         """Create buttons for Simple docking mode."""

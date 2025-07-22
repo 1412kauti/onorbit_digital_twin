@@ -76,7 +76,7 @@ def configure_robot_joints_robust(stage, robot_prim_path):
         def _init_articulation():
             """Initialize articulation when timeline is playing."""
             try:
-                from omni.isaac.core.articulations import Articulation
+                from isaacsim.core.articulations import Articulation
                 
                 robot = Articulation(prim_path=robot_prim_path, name="canadarm2")
                 robot.initialize()
