@@ -1,0 +1,25 @@
+moveit_setup_assistant_config:
+  urdf:
+    package: canadarm2_description
+    relative_path: urdf/CanadaArm2-DAE-ROS2.urdf
+  srdf:
+    relative_path: config/CanadaArm2.srdf
+  package_settings:
+    author_name: Kautilya Reddy Chappidi
+    author_email: kautilya97@gmail.com
+    generated_timestamp: 1753303506
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity
+  modified_urdf:
+    xacros:
+      - control_xacro
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity

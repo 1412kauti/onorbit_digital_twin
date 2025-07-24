@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="CanadaArm2">
+    <xacro:arg name="initial_positions_file" default="initial_positions.yaml" />
+
+    <!-- Import CanadaArm2 urdf file -->
+    <xacro:include filename="$(find canadarm2_description)/urdf/CanadaArm2-DAE-ROS2.urdf" />
+
+    <!-- Import control_xacro -->
+    <xacro:include filename="CanadaArm2.ros2_control.xacro" />
+
+
+    <xacro:CanadaArm2_ros2_control name="FakeSystem" initial_positions_file="$(arg initial_positions_file)"/>
+
+</robot>

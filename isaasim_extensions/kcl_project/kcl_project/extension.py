@@ -60,8 +60,8 @@ class KclProjectExtension(omni.ext.IExt):
             carb.log_info(f"[KCL Project] Joint control method changed to: {command_data}")
         elif command_type == 'ros2_launch':
             self._ros2_joint_control(command_data)
-        elif command_type == 'moveit_launch':
-            self._moveit2_joint_control(command_data)
+        elif command_type == 'load_ros2_usd':
+            self._load_ros2_control_usd()
         else:
             carb.log_warn(f"[KCL Project] Unknown joint control command: {command_type}")
     
@@ -154,18 +154,6 @@ class KclProjectExtension(omni.ext.IExt):
         else:
             carb.log_warn(f"[KCL Project] Unknown ROS2 control command: {details}")
     
-    def _moveit2_joint_control(self, details):
-        """Handle MoveIt2 joint control commands."""
-        carb.log_info(f"[KCL Project] MoveIt2 joint control: {details}")
-        
-        if details == 'launch_moveit':
-            self._launch_moveit2_demo()
-        elif details == 'plan_to_pose':
-            self._plan_moveit2_pose()
-        elif details == 'execute_trajectory':
-            self._execute_moveit2_trajectory()
-        else:
-            carb.log_warn(f"[KCL Project] Unknown MoveIt2 control command: {details}")
     
     # Direct joint control implementation methods
     def _move_joints_to_home(self):
@@ -304,6 +292,51 @@ class KclProjectExtension(omni.ext.IExt):
                     
         except Exception as e:
             carb.log_error(f"[KCL Project] Error applying joint positions: {str(e)}")
+    
+    def _load_ros2_control_usd(self):
+        """Load the ROS2 Control USD file when ROS2 Control mode is selected."""
+        try:
+            import omni.usd
+            import omni.kit.app
+            
+            carb.log_info("[KCL Project] Loading ROS2 Control USD file...")
+            
+            # Get the absolute path to the ROS2 Control USD file
+            ext_manager = omni.kit.app.get_app().get_extension_manager()
+            ext_path = ext_manager.get_extension_path(self._ext_id)
+            ros2_usd_path = os.path.abspath(os.path.join(ext_path, "data", "usd", "ros2_ctrl.usd"))
+            
+            carb.log_info(f"[KCL Project] ROS2 USD path: {ros2_usd_path}")
+            carb.log_info(f"[KCL Project] File exists check: {os.path.exists(ros2_usd_path)}")
+            
+            if not os.path.exists(ros2_usd_path):
+                carb.log_error(f"[KCL Project] ROS2 Control USD file not found: {ros2_usd_path}")
+                return False
+            
+            # Get the current stage
+            stage = omni.usd.get_context().get_stage()
+            if not stage:
+                carb.log_error("[KCL Project] No USD stage available")
+                return False
+            
+            # Load the USD file by opening it
+            carb.log_info(f"[KCL Project] Opening ROS2 Control USD file: {ros2_usd_path}")
+            
+            # Use Omniverse's open_stage command to load the USD file
+            import omni.kit.commands
+            omni.kit.commands.execute('OpenStage', usd_file=ros2_usd_path)
+            
+            carb.log_info("[KCL Project] ROS2 Control USD file loaded successfully")
+            
+            # Store reference for any future ROS2 control operations
+            self._ros2_control_loaded = True
+            self._ros2_usd_path = ros2_usd_path
+            
+            return True
+            
+        except Exception as e:
+            carb.log_error(f"[KCL Project] Error loading ROS2 Control USD: {str(e)}")
+            return False
 
     def _on_connect_sensors(self):
         """Connect sensor callbacks when user explicitly requests it."""

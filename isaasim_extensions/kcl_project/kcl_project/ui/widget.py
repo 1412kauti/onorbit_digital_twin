@@ -57,7 +57,10 @@ class KclMainWidget:
         
         # Joint control callbacks
         self._joint_control_callback = None
-        self._current_joint_control_method = "Direct Control"
+        self._current_joint_control_method = "Joint Control"
+        
+        # UI update scheduling
+        self._pending_ui_update = False
 
     def set_imu_data_callback(self, callback):
         """Set the callback function to get IMU data."""
@@ -238,20 +241,22 @@ class KclMainWidget:
     def _on_joint_control_changed(self, model, item):
         """Handle joint control method dropdown change."""
         selected_method = self._joint_control_combo.model.get_item_value_model().get_value_as_int()
-        method_names = ["Direct Control", "ROS2 Control", "MoveIt2 Control"]
+        method_names = ["Joint Control", "ROS2 Control"]
         
         if selected_method < len(method_names):
             self._current_joint_control_method = method_names[selected_method]
             carb.log_info(f"[Widget] Joint control method changed to: {self._current_joint_control_method}")
             
+            # If ROS2 Control is selected, clear scene and load USD
+            if self._current_joint_control_method == "ROS2 Control":
+                self._handle_ros2_control_selection()
+            
             # Notify extension of the change
             if self._joint_control_callback:
                 self._joint_control_callback("method_changed", self._current_joint_control_method)
         
-        # Refresh the visual inspection interface if it's currently shown
-        selected_operation = self._docking_operation_combo.model.get_item_value_model().get_value_as_int()
-        if selected_operation == 3:  # Visual Inspection mode
-            self._create_operation_interface()
+        # Defer the UI update to avoid clearing during event callback
+        self._schedule_ui_update()
     
     def _on_operation_changed(self, model, item):
         """Handle docking operation dropdown change."""
@@ -441,9 +446,8 @@ class KclMainWidget:
         with ui.HStack(spacing=10):
             ui.Label("Method:", width=50, style={"font_size": 11})
             self._joint_control_combo = ui.ComboBox(0,
-                "Direct Control",
-                "ROS2 Control",
-                "MoveIt2 Control",
+                "Joint Control",
+                "ROS2_Control",
                 width=120)
             self._joint_control_combo.model.add_item_changed_fn(self._on_joint_control_changed)
         
@@ -452,12 +456,10 @@ class KclMainWidget:
         # Joint Control Section for Visual Inspection
         ui.Label(f"Joint Control ({self._current_joint_control_method})", style={"font_size": 12, "color": 0xFF0080FF})
         
-        if self._current_joint_control_method == "Direct Control":
+        if self._current_joint_control_method == "Joint Control":
             self._create_direct_control_ui()
-        elif self._current_joint_control_method == "ROS2 Control":
+        elif self._current_joint_control_method == "ROS2_Control":
             self._create_ros2_control_ui()
-        elif self._current_joint_control_method == "MoveIt2 Control":
-            self._create_moveit2_control_ui()
     
     def _create_simple_mode_buttons(self):
         """Create buttons for Simple docking mode."""
@@ -551,31 +553,10 @@ class KclMainWidget:
     
     def _create_ros2_control_ui(self):
         """Create UI for ROS2 Control method."""
-        ui.Label("ROS2 joint_state_publisher_gui integration", style={"font_size": 10, "color": 0xFFFFFFFF})
-        
-        with ui.VStack(spacing=5):
-            ui.Button("Launch ROS2 Control", height=35, width=180).set_clicked_fn(lambda: self._send_joint_command("ros2_launch", "control"))
-            ui.Button("Connect to Joint GUI", height=30, width=180).set_clicked_fn(lambda: self._send_joint_command("ros2_connect", "gui"))
-            
-            ui.Label("Status: Not Connected", style={"font_size": 10, "color": 0xFFFF0000})
-            ui.Label("Launch external ROS2 joint control GUI", style={"font_size": 10, "color": 0xFFFFFFFF})
+        ui.Label("ROS2 Control", style={"font_size": 14, "color": 0xFF00FF00})
+        ui.Label("Scene and USD file loaded automatically", style={"font_size": 10, "color": 0xFFFFFFFF})
+        ui.Label("Use external ROS2 tools for joint control", style={"font_size": 10, "color": 0xFFFFFFFF})
     
-    def _create_moveit2_control_ui(self):
-        """Create UI for MoveIt2 Control method."""
-        ui.Label("MoveIt2 motion planning and execution", style={"font_size": 10, "color": 0xFFFFFFFF})
-        
-        with ui.VStack(spacing=5):
-            ui.Button("Launch MoveIt2", height=35, width=180).set_clicked_fn(lambda: self._send_joint_command("moveit_launch", "demo"))
-            
-            # Predefined poses
-            with ui.HStack(spacing=5):
-                ui.Button("Plan to Home", height=30, width=85).set_clicked_fn(lambda: self._send_joint_command("moveit_plan", "home"))
-                ui.Button("Plan to Ready", height=30, width=85).set_clicked_fn(lambda: self._send_joint_command("moveit_plan", "ready"))
-            
-            ui.Button("Execute Planned Path", height=30, width=180).set_clicked_fn(lambda: self._send_joint_command("moveit_execute", None))
-            
-            ui.Label("Status: Not Connected", style={"font_size": 10, "color": 0xFFFF0000})
-            ui.Label("Advanced trajectory planning with collision avoidance", style={"font_size": 10, "color": 0xFFFFFFFF})
     
     def _apply_manual_angles(self):
         """Apply manually set joint angles to the robot."""
@@ -623,6 +604,45 @@ class KclMainWidget:
             carb.log_info(f"[Widget] Sent joint command: {command_type} - {command_data}")
         else:
             carb.log_warn("[Widget] No joint control callback set")
+    
+    def _handle_ros2_control_selection(self):
+        """Handle ROS2 Control selection - clear scene and load USD file."""
+        try:
+            # Clear the current scene
+            if self._on_clear_scene:
+                self._on_clear_scene()
+                carb.log_info("[Widget] Scene cleared for ROS2 Control")
+            
+            # Load the USD file for ROS2 Control
+            # This will be handled by the extension which should have the USD file path
+            if self._joint_control_callback:
+                self._joint_control_callback("load_ros2_usd", None)
+                carb.log_info("[Widget] Requested USD loading for ROS2 Control")
+                
+        except Exception as e:
+            carb.log_error(f"[Widget] Error handling ROS2 Control selection: {str(e)}")
+    
+    def _schedule_ui_update(self):
+        """Schedule a deferred UI update to avoid clearing during event callbacks."""
+        if not self._pending_ui_update:
+            self._pending_ui_update = True
+            # Use asyncio to defer the update to the next event loop cycle
+            import asyncio
+            
+            async def do_update():
+                await asyncio.sleep(0.01)  # Small delay to ensure we're out of the event callback
+                if self._pending_ui_update:
+                    self._pending_ui_update = False
+                    # Check if we're in visual inspection mode before updating
+                    try:
+                        selected_operation = self._docking_operation_combo.model.get_item_value_model().get_value_as_int()
+                        if selected_operation == 3:  # Visual Inspection mode
+                            self._create_operation_interface()
+                    except Exception as e:
+                        carb.log_error(f"[Widget] Error in deferred UI update: {str(e)}")
+            
+            # Schedule the update
+            asyncio.ensure_future(do_update())
 
     def _create_imu_display(self):
         """Create the IMU data display window."""
