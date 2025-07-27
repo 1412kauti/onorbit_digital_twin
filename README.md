@@ -1,10 +1,16 @@
 # Digital Twins for Onorbit Space Operations
 
+## Acquiring Files
+This Repository has a few git submodules associated with it so proceed with
+```bash
+git clone --recurse-submodule -b ros2-humble https://github.com/1412kauti/onorbit_digital_twin.git
+```
+
 ## Installation
 ### Automated Script (Recommended)
 > Should not require `sudo` at any point of the operation
 ```bash
-cd utils
+cd onorbit_digital_twin/utils
 bash getting-started.sh
 ```
 ### Manual Installation
@@ -25,7 +31,10 @@ cp -r ros2_packages/canadarm2_description/ ~/colcon_ws/src
 ```
 cp -r ros2_packages/canadarm2_moveit_config ~/colcon_ws/src
 ```
-
+## Install ROS2 packages
+```bash
+sudo apt install ros-humble-controller-manager ros-humble-moveit ros-humble-pick-ik ros-humble-joint-state-broadcaster ros-humble-joint-state-broadcaster-gui  ros-humble-ros2-control ros-humble-ros2-controllers -y
+```
 ## Usage
 
 The Extension now should open up as an optional Extension that You need to enable to be welcomed by an Isaac Sim Native UI.
@@ -37,11 +46,11 @@ source /opt/ros/humble/setup.bash
 ```
 and then run your Isaac Sim as usual (Again, considering that Isaac Sim is installed at ``~/isaacsim`)
 ```bash
-.~/isaacsim/isaac-sim.sh
+bash ~/isaacsim/isaac-sim.sh
 ```
 ### For ROS2 (Using ROS2 Bridge) 
 Incase you dont have ROS2 Installed, you can use the preinstalled ROS2 packages in Isaac Sim with ROS2 bridge using:
 ```bash
-.~/isaacsim/isaac-sim.selector.sh
+bash ~/isaacsim/isaac-sim.selector.sh
 ```
 
