@@ -1,4 +1,0 @@
-[submodule "ros2_packages/canadarm2_description"]
-	path = ros2_packages/canadarm2_description
-	url = https://github.com/1412kauti/canadarm2_description.git
-	branch = ros2-humble
