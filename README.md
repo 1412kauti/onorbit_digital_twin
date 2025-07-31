@@ -3,7 +3,7 @@
 ## Acquiring Files
 This Repository has a few git submodules associated with it so proceed with
 ```bash
-git clone --recurse-submodule -b ros2-humble https://github.com/1412kauti/onorbit_digital_twin.git
+git clone -b ros2-humble https://github.com/1412kauti/onorbit_digital_twin.git
 ```
 
 ## Installation
